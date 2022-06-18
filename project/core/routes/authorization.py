@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database.queries.user import UserQuery
@@ -15,28 +15,25 @@ router = APIRouter(
 
 @router.post("/signup", response_model=AuthDetails)
 def register_user(user: AuthDetails, database: Session = Depends(get_database)):
-    auth_handler = Authentication()
-    user_instance = UserQuery(user.login, user.password)
-    login_exists = user_instance.get_user_by_login(database)
-    user_instance.password = auth_handler.get_hashed_password(user_instance.password)
-    if login_exists:
+    user_from_db = UserQuery(**user.dict()).get_user_by_login(database)
+    if user_from_db:
         raise HTTPException(status_code=400, detail='The login already exists')
-    return user_instance.create_user(database=database)
+    profile = Authentication().create_profile(user.login, user.password, database)
+    return profile
 
 
 @router.post("/login", response_model=Token)
 def login_user(user: AuthDetails, database: Session = Depends(get_database)):
-    auth_handler = Authentication()
-    user_instance = UserQuery(user.login, user.password)
-    user_from_database = user_instance.get_user_by_login(database=database)
-    if user_from_database is None:
+    user_from_db = UserQuery(**user.dict()).get_user_by_login(database)
+    if user_from_db is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            status_code=404,
+            detail="User does not exist",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    verified_password = auth_handler.verify_password(user_instance.password, user_from_database.password)
+    verified_password = Authentication().verify_password(user.password,
+                                                         user_from_db.password)
     if not verified_password:
-        raise HTTPException(status_code=401, detail="Invalid login or password")
-    access_token = auth_handler.create_access_token(user.login)
+        raise HTTPException(status_code=401, detail="Incorrect login or password")
+    access_token = Authentication().create_access_token(user.login)
     return {"access_token": access_token, "token_type": "bearer"}

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from database.entities.user.user_models import User
+from database.entities.user import user_models
 
 
 class UserQuery:
@@ -8,12 +8,14 @@ class UserQuery:
         self.login = login
         self.password = password
 
-    def get_user_by_login(self, database: Session) -> User | None:
-        user = database.query(User).filter(User.login == self.login).first()
+    def get_user_by_login(self, database: Session) -> user_models.User | None:
+        user = (database.query(user_models.User)
+                        .filter(user_models.User.login == self.login)
+                        .first())
         return user
 
-    def create_user(self, database: Session) -> User:
-        user = User(login=self.login, password=self.password)
+    def create_user(self, database: Session) -> user_models.User:
+        user = user_models.User(login=self.login, password=self.password)
         database.add(user)
         database.commit()
         database.refresh(user)

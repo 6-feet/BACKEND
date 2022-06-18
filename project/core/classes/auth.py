@@ -5,6 +5,10 @@ import jwt
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from database.entities.user import user_models
+from database.queries import user
 
 
 class Authentication:
@@ -12,14 +16,14 @@ class Authentication:
         self.secret = os.environ["SECRET"]
         self.algorithm = os.environ["ALGORITHM"]
         self.access_token_expire_minutes = int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"])
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        self.cryptography_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self.security = HTTPBearer()
 
     def get_hashed_password(self, password: str) -> str:
-        return self.pwd_context.hash(password)
+        return self.cryptography_context.hash(password)
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self.pwd_context.verify(plain_password, hashed_password)
+        return self.cryptography_context.verify(plain_password, hashed_password)
 
     def create_access_token(self, login: str):
         payload = {
@@ -40,3 +44,8 @@ class Authentication:
 
     def requires_authentication(self, auth: HTTPAuthorizationCredentials = Security(HTTPBearer())) -> str:
         return self.decode_token(auth.credentials)
+
+    def create_profile(self, login: str, password: str, database: Session) -> user_models.User:
+        user_instance = user.UserQuery(login, password)
+        user_instance.password = self.get_hashed_password(user_instance.password)
+        return user_instance.create_user(database)
