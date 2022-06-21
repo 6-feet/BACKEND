@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import UUID
 
-from database.entities.base import Base
+from database.models.base import Base
 
 
 class Breed(Base):

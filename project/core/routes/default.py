@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from core.classes.auth import Authentication
+from core.classes.authentication import Authentication
 
 
 router = APIRouter(

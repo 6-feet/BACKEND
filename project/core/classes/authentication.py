@@ -7,8 +7,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from database.entities.user import user_models
-from database.queries import user
+from database.models import user
+from database.queries import user_query
 
 
 class Authentication:
@@ -45,7 +45,7 @@ class Authentication:
     def requires_authentication(self, auth: HTTPAuthorizationCredentials = Security(HTTPBearer())) -> str:
         return self.decode_token(auth.credentials)
 
-    def create_profile(self, login: str, password: str, database: Session) -> user_models.User:
-        user_instance = user.UserQuery(login, password)
+    def create_profile(self, login: str, password: str, database: Session) -> user.User:
+        user_instance = user_query.UserQuery(login, password)
         user_instance.password = self.get_hashed_password(user_instance.password)
         return user_instance.create_user(database)
