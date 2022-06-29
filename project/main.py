@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 
+from core.routes import authorization, default
+
 
 app = FastAPI()
-
-
-@app.get("/")
-def greets_a_person():
-    return {"greetings": "hey!"}
+app.include_router(authorization.router)
+app.include_router(default.router)
